@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UniAssist — AI Student Help Desk</title>
+<style>
+:root{--brand:#1e3a8a;--brand2:#2563eb;--accent:#0ea5e9;--bg:#f1f5f9;--card:#fff;
+--ok:#16a34a;--warn:#d97706;--danger:#dc2626;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;}
+*{box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+.hidden{display:none!important}
+header{background:var(--brand);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px;margin:0;letter-spacing:.3px}
+header .who{font-size:13px;opacity:.9}
+button{cursor:pointer;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600}
+.btn-primary{background:var(--brand2);color:#fff}.btn-primary:hover{background:var(--brand)}
+.btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
+.wrap{max-width:1080px;margin:24px auto;padding:0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+/* login */
+.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;
+background:linear-gradient(135deg,#1e3a8a,#0ea5e9)}
+.login-box{background:#fff;border-radius:16px;padding:34px;width:360px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.login-box h2{margin:0 0 4px;color:var(--brand)}
+.login-box p{margin:0 0 20px;color:var(--muted);font-size:13px}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.tabs{display:flex;gap:8px;margin-bottom:8px}
+.tab{flex:1;text-align:center;padding:8px;border-radius:8px;background:#eef2ff;color:var(--brand);font-size:13px;font-weight:600}
+.tab.active{background:var(--brand2);color:#fff}
+.hint{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5}
+/* chat */
+.chat{height:420px;overflow-y:auto;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fafcff;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:11px 14px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--brand2);color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:#eef2f7;color:var(--ink);border-bottom-left-radius:4px}
+.meta{font-size:11px;color:var(--muted);margin-top:6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.b-ans{background:#dcfce7;color:var(--ok)}.b-tkt{background:#fef3c7;color:var(--warn)}
+.chat-in{display:flex;gap:8px;margin-top:12px}
+.chat-in input{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:linear-gradient(135deg,#eef2ff,#fff);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi .n{font-size:26px;font-weight:800;color:var(--brand)}
+.kpi .l{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.nav button{background:#fff;border:1px solid var(--line);color:var(--brand)}
+.nav button.active{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+.pill{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.p-open{background:#fee2e2;color:var(--danger)}.p-assigned{background:#fef3c7;color:var(--warn)}
+.p-resolved{background:#dcfce7;color:var(--ok)}
+.row-actions button{padding:6px 10px;font-size:12px}
+@media(max-width:640px){.msg{max-width:90%}.wrap{padding:0 10px}}
+</style>
+</head>
+<body>
+<!-- ============ LOGIN ============ -->
+<div id="login" class="login-bg">
+  <div class="login-box">
+    <h2>UniAssist</h2>
+    <p>Multi-Agent AI Student Help Desk</p>
+    <div class="tabs">
+      <div class="tab active" data-portal="student" onclick="setPortal('student')">Student</div>
+      <div class="tab" data-portal="faculty" onclick="setPortal('faculty')">Faculty / Admin</div>
+    </div>
+    <label>User ID</label><input id="uid" placeholder="21CS7042"/>
+    <label>Password</label><input id="pwd" type="password" placeholder="••••••••"/>
+    <button class="btn-primary" style="width:100%;margin-top:18px" onclick="login()">Sign in</button>
+    <div id="loginErr" class="hint" style="color:var(--danger)"></div>
+    <div class="hint">Demo logins:<br>Student <b>21CS7042 / student123</b><br>
+      Faculty <b>F-EXAM-01 / faculty123</b> · Admin <b>ADMIN-01 / faculty123</b></div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app" class="hidden">
+  <header>
+    <h1>UniAssist · <span id="portalName"></span></h1>
+    <div><span class="who" id="who"></span>
+      <button class="btn-ghost" style="margin-left:12px" onclick="logout()">Logout</button></div>
+  </header>
+  <div class="wrap">
+    <div class="nav" id="nav"></div>
+    <div id="view"></div>
+  </div>
+</div>
+
+<script>
+const API = location.origin.startsWith("http") && !location.origin.includes("null")
+  ? "" : "http://localhost:8000";   // same-origin when served by FastAPI
+let S = {token:null, role:null, name:null, portal:"student", session:null};
+
+function setPortal(p){S.portal=p;document.querySelectorAll('.tab').forEach(t=>
+  t.classList.toggle('active',t.dataset.portal===p));}
+async function api(path,opts={}){
+  opts.headers=Object.assign({'Content-Type':'application/json'},opts.headers||{},
+    S.token?{'Authorization':'Bearer '+S.token}:{});
+  const r=await fetch(API+path,opts);
+  if(!r.ok) throw new Error((await r.json().catch(()=>({}))).detail||r.status);
+  return r.json();
+}
+async function login(){
+  const body={user_id:uid.value.trim(),password:pwd.value,portal:S.portal};
+  try{
+    const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify(body)});
+    S.token=d.token;S.role=d.role;S.name=d.name;
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('who').textContent=d.name+' ('+d.role+')';
+    buildNav();
+  }catch(e){loginErr.textContent='Login failed: '+e.message;}
+}
+function logout(){S={token:null,role:null,portal:S.portal};location.reload();}
+
+function buildNav(){
+  const nav=document.getElementById('nav');nav.innerHTML='';
+  let items;
+  if(S.role==='student'){document.getElementById('portalName').textContent='Student Portal';
+    items=[['Chat',renderChat],['My Tickets',renderTickets],['Notifications',renderNotifs]];}
+  else if(S.role==='admin'){document.getElementById('portalName').textContent='Admin Portal';
+    items=[['Analytics',renderAnalytics],['KB Approval',renderKBApproval],['Ticket Inbox',renderTickets],['Knowledge Base',renderKB]];}
+  else{document.getElementById('portalName').textContent='Faculty Portal';
+    items=[['Ticket Inbox',renderTickets],['Knowledge Base',renderKB]];}
+  items.forEach(([label,fn],i)=>{const b=document.createElement('button');b.textContent=label;
+    b.onclick=()=>{[...nav.children].forEach(c=>c.classList.remove('active'));b.classList.add('active');fn();};
+    if(i===0)b.classList.add('active');nav.appendChild(b);});
+  items[0][1]();
+}
+const view=()=>document.getElementById('view');
+
+// ---------- STUDENT: CHAT ----------
+function renderChat(){
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">Ask UniAssist</h3>
+   <div class="chat" id="chat"></div>
+   <div class="chat-in"><input id="q" placeholder="e.g. When will Semester 7 examinations begin?"
+     onkeydown="if(event.key==='Enter')send()"/>
+     <button class="btn-primary" onclick="send()">Send</button></div></div>`;
+  bot("Hi! I'm your AI help desk. Ask me about exams, fees, library, hostel, placements and more.");
+}
+function bubble(t,cls,meta){const c=document.getElementById('chat');
+  const d=document.createElement('div');d.className='msg '+cls;d.textContent=t;
+  if(meta){const m=document.createElement('div');m.className='meta';m.innerHTML=meta;d.appendChild(m);}
+  c.appendChild(d);c.scrollTop=c.scrollHeight;}
+const bot=(t,m)=>bubble(t,'bot',m);
+async function send(){
+  const q=document.getElementById('q');if(!q.value.trim())return;
+  bubble(q.value,'user');const text=q.value;q.value='';
+  try{
+    const d=await api('/api/chat',{method:'POST',body:JSON.stringify({message:text,session_id:S.session})});
+    S.session=d.session_id;
+    const badge=d.decision==='answer'?'<span class="badge b-ans">Answered by AI</span>'
+      :'<span class="badge b-tkt">Ticket '+(d.ticket_id||'')+'</span>';
+    bot(d.answer,`${badge} &nbsp; intent: <b>${d.intent}</b> &nbsp; confidence: <b>${(d.confidence*100).toFixed(0)}%</b>`);
+  }catch(e){bot('Error: '+e.message);}
+}
+// ---------- TICKETS ----------
+async function renderTickets(){
+  const mine=await api('/api/tickets/mine');
+  const isFac=S.role!=='student';
+  let rows=mine.map(t=>`<tr><td>${t.ticket_id}</td><td>${t.intent||''}</td>
+     <td>${t.query}</td><td><span class="pill p-${t.status}">${t.status}</span></td>
+     <td>${(t.confidence*100).toFixed(0)}%</td>
+     ${isFac?`<td class="row-actions">${t.status!=='resolved'&&t.status!=='closed'
+        ?`<button class="btn-primary" onclick="answer('${t.ticket_id}')">Respond</button>`
+        :'✓'}</td>`:`<td>${t.faculty_answer?'✔ '+t.faculty_answer.slice(0,40)+'…':'awaiting'}</td>`}</tr>`).join('');
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">${isFac?'Ticket Inbox':'My Tickets'}</h3>
+   <table><tr><th>ID</th><th>Intent</th><th>Query</th><th>Status</th><th>Conf.</th>
+   <th>${isFac?'Action':'Answer'}</th></tr>${rows||'<tr><td colspan=6>No tickets.</td></tr>'}</table></div>`;
+}
+async function answer(id){
+  const a=prompt('Enter your response to '+id);if(!a)return;
+  await api('/api/tickets/'+id+'/respond',{method:'POST',body:JSON.stringify({answer:a})});
+  alert('Response sent. A KB draft was created for admin approval.');renderTickets();
+}
+// ---------- NOTIFICATIONS ----------
+async function renderNotifs(){
+  const n=await api('/api/notifications');
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">Notifications</h3>${
+    n.map(x=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)">
+    <b>${x.subject}</b> <span class="pill p-resolved">${x.status}</span>
+    <div class="meta">${x.message}</div></div>`).join('')||'No notifications.'}</div>`;
+}
+// ---------- ADMIN: ANALYTICS ----------
+async function renderAnalytics(){
+  const d=await api('/api/analytics');
+  const k=(n,l)=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">Operations Dashboard</h3>
+   <div class="grid">${k(d.total_chats,'Total Chats')}${k(d.deflection_rate_pct+'%','AI Deflection')}
+   ${k(d.tickets,'Tickets')}${k(d.open_tickets,'Open')}${k(d.resolved_tickets,'Resolved')}
+   ${k(d.kb_pending_approval,'KB Pending')}</div>
+   <h4>Queries by Intent</h4><table><tr><th>Intent</th><th>Count</th></tr>${
+   Object.entries(d.queries_by_intent).map(([i,c])=>`<tr><td>${i}</td><td>${c}</td></tr>`).join('')}</table></div>`;
+}
+// ---------- ADMIN: KB APPROVAL ----------
+async function renderKBApproval(){
+  const p=await api('/api/kb/pending');
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">Knowledge Base — Pending Approval</h3>${
+    p.map(k=>`<div class="card" style="background:#fafcff">
+      <b>Q:</b> ${k.question}<br><b>A:</b> ${k.answer}
+      <div style="margin-top:10px"><button class="btn-primary" onclick="approve(${k.knowledge_id})">
+        Approve & Re-index</button></div></div>`).join('')||'Nothing pending. 🎉'}</div>`;
+}
+async function approve(id){await api('/api/kb/approve',{method:'POST',body:JSON.stringify({knowledge_id:id})});
+  alert('Approved & re-indexed. Future students get this answer automatically.');renderKBApproval();}
+async function renderKB(){
+  const k=await api('/api/kb');
+  view().innerHTML=`<div class="card"><h3 style="margin-top:0">Knowledge Base</h3>
+   <table><tr><th>ID</th><th>Question</th><th>Status</th><th>Ver</th></tr>${
+   k.map(x=>`<tr><td>${x.knowledge_id}</td><td>${x.question}</td>
+   <td><span class="pill p-${x.status==='approved'?'resolved':'assigned'}">${x.status}</span></td>
+   <td>${x.version}</td></tr>`).join('')}</table></div>`;
+}
+</script>
+</body>
+</html>

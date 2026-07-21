@@ -1,0 +1,36 @@
+# Local production-like stack: API + PostgreSQL(pgvector) + OpenSearch + Redis
+version: "3.9"
+services:
+  db:
+    image: ankane/pgvector:v0.5.1
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  opensearch:
+    image: opensearchproject/opensearch:2.13.0
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports: ["9200:9200"]
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://helpdesk:helpdesk@db:5432/helpdesk
+      REDIS_URL: redis://redis:6379/0
+      OPENSEARCH_URL: http://opensearch:9200
+      CONFIDENCE_THRESHOLD: "0.85"
+      NOTIFY_BACKEND: console
+      JWT_SECRET: change-me-in-prod
+    depends_on: [db, redis, opensearch]
+    ports: ["8000:8000"]
+volumes:
+  pgdata:
