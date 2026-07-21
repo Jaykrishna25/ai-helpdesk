@@ -4,12 +4,7 @@ sqlalchemy==2.0.30
 pydantic==2.7.1
 pydantic-settings==2.3.0
 passlib[bcrypt]==1.7.4
-bcrypt==4.0.1          # pin: passlib 1.7.4 breaks on bcrypt>=4.1 (reads removed __about__)
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.9
 numpy==1.26.4
-# Optional (production): real embeddings + postgres + AWS
-# sentence-transformers==2.7.0
-# psycopg2-binary==2.9.9
-# pgvector==0.2.5
-# boto3==1.34.0
+psycopg2-binary==2.9.9
